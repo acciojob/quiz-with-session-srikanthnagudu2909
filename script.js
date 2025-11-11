@@ -1,4 +1,4 @@
-// --- Your given quiz questions ---
+// --- Quiz Questions ---
 const questions = [
   {
     question: "What is the capital of France?",
@@ -31,60 +31,61 @@ const questionsElement = document.getElementById("questions");
 const submitBtn = document.getElementById("submit");
 const scoreDiv = document.getElementById("score");
 
-// Load user progress from sessionStorage (if exists)
+// Load saved progress
 let userAnswers = JSON.parse(sessionStorage.getItem("progress")) || {};
 
-// --- Display Questions ---
+// --- Render Questions ---
 function renderQuestions() {
   questionsElement.innerHTML = "";
 
   for (let i = 0; i < questions.length; i++) {
     const question = questions[i];
-    const questionElement = document.createElement("div");
-    questionElement.classList.add("question");
+    const questionDiv = document.createElement("div");
+    questionDiv.classList.add("question");
 
-    const questionText = document.createElement("p");
-    questionText.textContent = question.question;
-    questionElement.appendChild(questionText);
+    const p = document.createElement("p");
+    p.textContent = question.question;
+    questionDiv.appendChild(p);
 
-    // Create options
+    // Render options
     for (let j = 0; j < question.choices.length; j++) {
       const choice = question.choices[j];
-      const label = document.createElement("label");
-      const choiceElement = document.createElement("input");
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = `question-${i}`;
+      input.value = choice;
 
-      choiceElement.setAttribute("type", "radio");
-      choiceElement.setAttribute("name", `question-${i}`);
-      choiceElement.setAttribute("value", choice);
-
-      // Restore checked state if previously saved
+      // ✅ Restore previous selection (Cypress expects [checked="true"])
       if (userAnswers[`question-${i}`] === choice) {
-        choiceElement.checked = true;
+        input.checked = true;
+        input.setAttribute("checked", "true"); // <-- Key fix
       }
 
-      // Save progress on selection
-      choiceElement.addEventListener("change", () => {
+      // Save progress on change
+      input.addEventListener("change", () => {
         userAnswers[`question-${i}`] = choice;
         sessionStorage.setItem("progress", JSON.stringify(userAnswers));
       });
 
-      label.appendChild(choiceElement);
+      const label = document.createElement("label");
+      label.appendChild(input);
       label.appendChild(document.createTextNode(" " + choice));
-      questionElement.appendChild(label);
-      questionElement.appendChild(document.createElement("br"));
+
+      questionDiv.appendChild(label);
+      questionDiv.appendChild(document.createElement("br"));
     }
 
-    questionsElement.appendChild(questionElement);
+    questionsElement.appendChild(questionDiv);
   }
 }
 
-// --- Calculate and Display Score ---
+// --- Calculate Score ---
 function calculateScore() {
   let score = 0;
 
   for (let i = 0; i < questions.length; i++) {
-    const userAnswer = userAnswers[`question-${i}`];
-    if (userAnswer === questions[i].answer) {
+    const selected = userAnswers[`question-${i}`];
+    if (selected === questions[i].answer) {
       score++;
     }
   }
@@ -93,7 +94,7 @@ function calculateScore() {
   localStorage.setItem("score", score);
 }
 
-// --- Load Last Score if Exists ---
+// --- Show Previous Score ---
 function loadPreviousScore() {
   const lastScore = localStorage.getItem("score");
   if (lastScore !== null) {
@@ -101,9 +102,11 @@ function loadPreviousScore() {
   }
 }
 
-// --- Event Listener for Submit Button ---
+// --- Event Listeners ---
 submitBtn.addEventListener("click", calculateScore);
 
-// --- On Page Load ---
-renderQuestions();
-loadPreviousScore();
+// --- Initialize ---
+window.onload = () => {
+  renderQuestions();
+  loadPreviousScore();
+};
